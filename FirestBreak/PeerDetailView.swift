@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import MultipeerConnectivity
 
 struct PeerDetailView: View {
     let profile: UserProfile
@@ -15,188 +16,144 @@ struct PeerDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .center, spacing: 16) {
-                // プロフィール画像
-                ZStack {
-                    if let imageData = profile.profileImage, let uiImage = UIImage(data: imageData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 150, height: 150)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(profile.conversationStatus.color, lineWidth: 3)
-                            )
-                    } else {
-                        Circle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 150, height: 150)
-                            .overlay(
-                                Circle()
-                                    .stroke(profile.conversationStatus.color, lineWidth: 3)
-                            )
-                            .overlay(
-                                Image(systemName: "person.fill")
-                                    .font(.system(size: 80))
-                                    .foregroundColor(.white)
-                            )
-                    }
+                // プロフィール画像（あれば表示）
+                if let imageData = profile.profileImage, let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 150, height: 150)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(profile.conversationStatus.color, lineWidth: 2))
+                        .padding(.top)
+                } else {
+                    // 画像がない場合のデフォルト表示
+                    Circle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 150, height: 150)
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 70))
+                                .foregroundColor(.gray)
+                        )
+                        .overlay(Circle().stroke(profile.conversationStatus.color, lineWidth: 2))
+                        .padding(.top)
                 }
-                .padding(.top, 20)
                 
-                // ユーザー名とステータス
-                VStack(spacing: 8) {
-                    Text(profile.name)
-                        .font(.title)
-                        .fontWeight(.bold)
+                // 名前とステータス
+                Text(profile.name)
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .padding(.top, 8)
+                
+                HStack {
+                    Circle()
+                        .fill(profile.conversationStatus.color)
+                        .frame(width: 12, height: 12)
                     
-                    HStack {
-                        Circle()
-                            .fill(profile.conversationStatus.color)
-                            .frame(width: 12, height: 12)
-                        
-                        Text(profile.conversationStatus.rawValue)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
+                    Text(profile.conversationStatus.rawValue)
+                        .font(.subheadline)
                 }
-                
-                Divider()
-                    .padding(.horizontal)
                 
                 // 自己紹介
                 if !profile.bio.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("自己紹介")
-                            .font(.headline)
-                            .padding(.leading)
+                    Group {
+                        Divider()
+                            .padding(.vertical)
                         
-                        Text(profile.bio)
-                            .padding()
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("自己紹介")
+                                .font(.headline)
+                                .padding(.bottom, 4)
+                            
+                            Text(profile.bio)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
                 }
                 
                 // 興味・関心
                 if !profile.interests.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("興味・関心")
-                            .font(.headline)
-                            .padding(.leading)
+                    Group {
+                        Divider()
+                            .padding(.vertical)
                         
-                        FlowLayout(spacing: 8) {
-                            ForEach(profile.interests, id: \.self) { interest in
-                                Text(interest)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.blue.opacity(0.1))
-                                    .cornerRadius(16)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("興味・関心")
+                                .font(.headline)
+                                .padding(.bottom, 4)
+                            
+                            // 興味タグ（横に並べて折り返し）
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 8)], spacing: 8) {
+                                ForEach(profile.interests, id: \.self) { interest in
+                                    Text(interest)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
+                                        .background(Color.blue.opacity(0.1))
+                                        .cornerRadius(10)
+                                }
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
                 }
                 
                 // 共通の興味
                 let commonInterests = sessionManager.findCommonInterests(with: profile)
                 if !commonInterests.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("共通の興味")
-                            .font(.headline)
-                            .padding(.leading)
+                    Group {
+                        Divider()
+                            .padding(.vertical)
                         
-                        FlowLayout(spacing: 8) {
-                            ForEach(commonInterests, id: \.self) { interest in
-                                Text(interest)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.green.opacity(0.1))
-                                    .foregroundColor(.green)
-                                    .cornerRadius(16)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("共通の興味")
+                                .font(.headline)
+                                .padding(.bottom, 4)
+                            
+                            // 共通の興味タグ（横に並べて折り返し）
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 8)], spacing: 8) {
+                                ForEach(commonInterests, id: \.self) { interest in
+                                    Text(interest)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
+                                        .background(Color.green.opacity(0.1))
+                                        .foregroundColor(.green)
+                                        .cornerRadius(10)
+                                }
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
                 }
                 
                 Spacer()
                 
-                // 通信ボタン
-                Button(action: {
-                    // メッセージやチャット画面への遷移など
-                    // ここではデモとしてメッセージを送信
-                    sessionManager.sendProfileTo(peer: peerID)
-                }) {
-                    HStack {
-                        Image(systemName: "message.fill")
-                        Text("メッセージを送る")
+                // アクションボタン
+                if sessionManager.connectedPeers.contains(peerID) {
+                    Button(action: {
+                        // メッセージを送る処理
+                        sessionManager.sendProfileTo(peer: peerID)
+                    }) {
+                        HStack {
+                            Image(systemName: "message")
+                            Text("メッセージを送る")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                    .padding(.horizontal)
+                    .padding(.bottom)
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 20)
             }
+            .padding()
         }
-        .navigationTitle("ユーザー詳細")
+        .navigationTitle("プロフィール詳細")
         .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-// フロータグレイアウト（興味タグを折り返して表示）
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
-    
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
-        
-        var width: CGFloat = 0
-        var height: CGFloat = 0
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        
-        for (index, size) in sizes.enumerated() {
-            if x + size.width > proposal.width ?? .infinity {
-                x = 0
-                y += size.height + spacing
-            }
-            
-            let subviewFrame = CGRect(x: x, y: y, width: size.width, height: size.height)
-            
-            x += size.width + spacing
-            width = max(width, x)
-            height = max(height, y + size.height)
-        }
-        
-        return CGSize(width: width, height: height)
-    }
-    
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
-        
-        var x = bounds.minX
-        var y = bounds.minY
-        
-        for (index, size) in sizes.enumerated() {
-            if x + size.width > bounds.maxX {
-                x = bounds.minX
-                y += size.height + spacing
-            }
-            
-            let point = CGPoint(x: x, y: y)
-            subviews[index].place(at: point, proposal: ProposedViewSize(size))
-            
-            x += size.width + spacing
-        }
     }
 }

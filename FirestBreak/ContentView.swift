@@ -197,9 +197,13 @@ struct ContentView: View {
     private var connectedPeersView: some View {
         List {
             // 発見したプロフィールを表示
+
             ForEach(Array(sessionManager.discoveredProfiles.keys), id: \.self) { peerID in
-                if let profile = sessionManager.discoveredProfiles[peerID] {
-                    NavigationLink(destination: PeerDetailView(profile: profile, peerID: peerID, sessionManager: sessionManager)) {
+                if let mcPeerID = peerID as? MCPeerID,
+                   let profile = sessionManager.discoveredProfiles[mcPeerID] {
+                    NavigationLink {
+                        PeerDetailView(profile: profile, peerID: mcPeerID, sessionManager: sessionManager)
+                    } label: {
                         PeerProfileView(profile: profile, commonInterests: sessionManager.findCommonInterests(with: profile))
                     }
                 }
