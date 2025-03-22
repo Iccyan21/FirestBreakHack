@@ -76,12 +76,19 @@ class MultipeerSessionManager: NSObject, ObservableObject {
     }
     // 全接続ピアニプロフィールをブロードキャスト
     func broadcastProfile() {
+        // 接続されたピアがいるか確認
+        guard !connectedPeers.isEmpty else {
+            print("接続されているピアがいません。プロフィールはブロードキャストされませんでした。")
+            return
+        }
+        
         // 全接続ピアにプロフィール情報を送信
         if let profileData = try? JSONEncoder().encode(myProfile) {
             do {
                 try session.send(profileData, toPeers: connectedPeers, with: .reliable)
+                print("プロフィールを \(connectedPeers.count) 台のデバイスに送信しました")
             } catch {
-                print("Error sending profile:\(error.localizedDescription)")
+                print("Error sending profile: \(error.localizedDescription)")
             }
         }
     }
