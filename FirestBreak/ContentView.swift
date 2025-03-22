@@ -385,13 +385,42 @@ struct ProfileEditorView: View {
                     .padding(.vertical, 8)
                 }
                 
-                // 既存のセクション（基本情報、趣味・興味など）
-                // ...
+                Section(header: Text("基本情報")) {
+                    TextField("名前", text: $name)
+                    
+                    Picker("会話ステータス", selection: $status) {
+                        Text("会話OK").tag(UserProfile.ConversationStatus.available)
+                        Text("少し忙しい").tag(UserProfile.ConversationStatus.busy)
+                        Text("話しかけNG").tag(UserProfile.ConversationStatus.unavailable)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+                
+                Section(header: Text("趣味・興味")) {
+                    TextField("カンマ区切りで入力", text: $interests)
+                        .font(.footnote)
+                    
+                    TextEditor(text: $bio)
+                        .frame(minHeight: 100)
+                    
+                    Text("興味のある話題を入力してください")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
             }
             .navigationTitle("プロフィール編集")
             .toolbar {
-                // 既存のツールバーアイテム
-                // ...
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        saveProfile()
+                    }
+                }
             }
             .sheet(isPresented: $showingImagePicker) {
                 ImagePicker(selectedImage: $profileImage)
