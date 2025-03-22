@@ -10,7 +10,7 @@ import SwiftUI
 import MultipeerConnectivity
 import RealityKit
 
-struct UserProfile: Codable,Identifiable {
+struct UserProfile: Codable,Identifiable, Hashable {
     var id = UUID()
     var name: String
     var profileImage: Data?
@@ -18,7 +18,7 @@ struct UserProfile: Codable,Identifiable {
     var interests: [String]
     var bio: String
     
-    enum ConversationStatus: String,Codable {
+    enum ConversationStatus: String, Codable, Hashable {
         case available = "会話OK"
         case busy = "少し忙しい"
         case unavailable = "会話NG"

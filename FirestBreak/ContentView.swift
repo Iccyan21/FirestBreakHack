@@ -12,6 +12,9 @@ import MultipeerConnectivity
 import CoreBluetooth
 
 struct ContentView: View {
+    
+    @Environment(\.openWindow) private var openWindow
+    
     @StateObject private var sessionManager: MultipeerSessionManager
     @State private var showingProfile = false
     @State private var showingInvitation = false
@@ -201,8 +204,8 @@ struct ContentView: View {
             ForEach(Array(sessionManager.discoveredProfiles.keys), id: \.self) { peerID in
                 if let mcPeerID = peerID as? MCPeerID,
                    let profile = sessionManager.discoveredProfiles[mcPeerID] {
-                    NavigationLink {
-                        PeerDetailView(profile: profile, peerID: mcPeerID, sessionManager: sessionManager)
+                    Button {
+                        openWindow(id: "ProfileDetail", value: profile)
                     } label: {
                         PeerProfileView(profile: profile, commonInterests: sessionManager.findCommonInterests(with: profile))
                     }

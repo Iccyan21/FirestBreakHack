@@ -2,29 +2,22 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- 既存の設定と共に以下を追加してください -->
-    
-    <!-- Bonjour サービス (必須) -->
-    <key>NSBonjourServices</key>
-    <array>
-        <string>_vision-fbreak._tcp</string>
-        <string>_vision-fbreak._udp</string>
-    </array>
-    
-    <!-- ローカルネットワーク使用の説明 (必須) -->
-    <key>NSLocalNetworkUsageDescription</key>
-    <string>このアプリは近くのユーザーを見つけるためにローカルネットワークを使用します</string>
-    
-    <!-- Bluetooth使用の説明 (推奨) -->
-    <key>NSBluetoothAlwaysUsageDescription</key>
-    <string>このアプリは近くのユーザーを見つけるためにBluetoothを使用します</string>
-    
-    <!-- バックグラウンド動作モードの設定 (オプション) -->
-    <key>UIBackgroundModes</key>
-    <array>
-        <string>bluetooth-central</string>
-        <string>bluetooth-peripheral</string>
-        <string>nearby-interaction</string>
-    </array>
+	<key>BluetoothAlwaysUsageDescription</key>
+	<string>Bluetooth接続するために使います</string>
+	<key>LocalNetworkUsageDescription</key>
+	<string>近くにいるユーザーを発見するためにローカルネットワークを使用します</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_FirestBreak._tcp</string>
+	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationPreferredDefaultSceneSessionRole</key>
+		<string>UIWindowSceneSessionRoleApplication</string>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<true/>
+		<key>UISceneConfigurations</key>
+		<dict/>
+	</dict>
 </dict>
 </plist>

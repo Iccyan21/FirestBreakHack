@@ -13,5 +13,10 @@ struct FirestBreakApp: App {
         WindowGroup {
             ContentView()
         }
+        
+        WindowGroup(id: "ProfileDetail", for: UserProfile.self) { $profile in
+            let pro = profile ?? .init(name: "unknown user", conversationStatus: .unavailable, interests: [], bio: "不明なユーザー")
+            UserProfileDetailView(profile: pro)
+        }
     }
 }
