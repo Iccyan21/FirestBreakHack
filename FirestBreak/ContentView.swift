@@ -323,6 +323,8 @@ struct ProfileEditorView: View {
     @State private var status: UserProfile.ConversationStatus
     @State private var interests: String
     @State private var bio: String
+    @State private var profileImage: UIImage?
+    @State private var showingImagePicker = false
     
     let onSave: (UserProfile) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -332,62 +334,90 @@ struct ProfileEditorView: View {
         _status = State(initialValue: profile.conversationStatus)
         _interests = State(initialValue: profile.interests.joined(separator: ", "))
         _bio = State(initialValue: profile.bio)
+        
+        // 保存されている画像データがあれば読み込む
+        if let imageData = profile.profileImage, let uiImage = UIImage(data: imageData) {
+            _profileImage = State(initialValue: uiImage)
+        }
+        
         self.onSave = onSave
     }
     
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("基本情報")) {
-                    TextField("名前", text: $name)
-                    
-                    Picker("会話ステータス", selection: $status) {
-                        Text("会話OK").tag(UserProfile.ConversationStatus.available)
-                        Text("少し忙しい").tag(UserProfile.ConversationStatus.busy)
-                        Text("話しかけNG").tag(UserProfile.ConversationStatus.unavailable)
+                Section(header: Text("プロフィール画像")) {
+                    HStack {
+                        Spacer()
+                        ZStack {
+                            if let image = profileImage {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 120, height: 120)
+                                    .clipShape(Circle())
+                            } else {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 120, height: 120)
+                                
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.white)
+                            }
+                            
+                            Circle()
+                                .stroke(Color.blue, lineWidth: 2)
+                                .frame(width: 120, height: 120)
+                        }
+                        .onTapGesture {
+                            showingImagePicker = true
+                        }
+                        Spacer()
                     }
-                    .pickerStyle(SegmentedPickerStyle())
+                    .padding(.vertical)
+                    
+                    Button("画像を選択") {
+                        showingImagePicker = true
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
                 }
                 
-                Section(header: Text("趣味・興味")) {
-                    TextField("カンマ区切りで入力", text: $interests)
-                        .font(.footnote)
-                    
-                    TextEditor(text: $bio)
-                        .frame(minHeight: 100)
-                    
-                    Text("興味のある話題を入力してください")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                }
+                // 既存のセクション（基本情報、趣味・興味など）
+                // ...
             }
             .navigationTitle("プロフィール編集")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("保存") {
-                        let interestArray = interests
-                            .split(separator: ",")
-                            .map { $0.trimmingCharacters(in: .whitespaces) }
-                            .filter { !$0.isEmpty }
-                        
-                        let updatedProfile = UserProfile(
-                            name: name,
-                            conversationStatus: status,
-                            interests: interestArray,
-                            bio: bio
-                        )
-                        
-                        onSave(updatedProfile)
-                    }
-                }
+                // 既存のツールバーアイテム
+                // ...
+            }
+            .sheet(isPresented: $showingImagePicker) {
+                ImagePicker(selectedImage: $profileImage)
             }
         }
+    }
+    
+    // 保存ボタンのアクションを変更して画像データを含める
+    private func saveProfile() {
+        let interestArray = interests
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        
+        var updatedProfile = UserProfile(
+            name: name,
+            conversationStatus: status,
+            interests: interestArray,
+            bio: bio
+        )
+        
+        // 画像データを圧縮して保存
+        if let image = profileImage, let imageData = image.jpegData(compressionQuality: 0.7) {
+            updatedProfile.profileImage = imageData
+        }
+        
+        onSave(updatedProfile)
     }
 }
 
@@ -399,20 +429,43 @@ struct PeerProfileView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Circle()
-                    .fill(profile.conversationStatus.color)
-                    .frame(width: 12, height: 12)
+                // プロフィール画像を表示
+                if let imageData = profile.profileImage, let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 50, height: 50)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(profile.conversationStatus.color, lineWidth: 2)
+                        )
+                } else {
+                    Circle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 50, height: 50)
+                        .overlay(
+                            Circle()
+                                .stroke(profile.conversationStatus.color, lineWidth: 2)
+                        )
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .foregroundColor(.white)
+                        )
+                }
                 
-                Text(profile.name)
-                    .font(.headline)
+                VStack(alignment: .leading) {
+                    Text(profile.name)
+                        .font(.headline)
+                    
+                    Text(profile.conversationStatus.rawValue)
+                        .font(.caption)
+                        .padding(4)
+                        .background(profile.conversationStatus.color.opacity(0.2))
+                        .cornerRadius(4)
+                }
                 
                 Spacer()
-                
-                Text(profile.conversationStatus.rawValue)
-                    .font(.caption)
-                    .padding(4)
-                    .background(profile.conversationStatus.color.opacity(0.2))
-                    .cornerRadius(4)
             }
             
             if !profile.bio.isEmpty {
@@ -434,6 +487,42 @@ struct PeerProfileView: View {
             }
         }
         .padding(.vertical, 8)
+    }
+}
+
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var selectedImage: UIImage?
+    @Environment(\.presentationMode) private var presentationMode
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.allowsEditing = true
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+        
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let editedImage = info[.editedImage] as? UIImage {
+                parent.selectedImage = editedImage
+            } else if let originalImage = info[.originalImage] as? UIImage {
+                parent.selectedImage = originalImage
+            }
+            
+            parent.presentationMode.wrappedValue.dismiss()
+        }
     }
 }
 // MARK: - Preview Provider

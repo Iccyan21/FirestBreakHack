@@ -14,14 +14,10 @@ class MultipeerSessionManager: NSObject, ObservableObject {
     @Published var receivedInvitation: (MCPeerID, Bool) -> Void = {_,_ in }
     // 自分自身のプロフィール情報
     var myProfile: UserProfile
-    
     // デバッグログ用
     @Published var debugLogs: [String] = []
-    
-    // 接続状態管理
+    // 接続状態を管理するenum(未接続、接続中、接続済み、エラー）
     @Published var connectionState: ConnectionState = .notConnected
-    
-    
     // 保留中の招待
     private var pendingInvitationHandlers: [MCPeerID: (Bool, MCSession?) -> Void] = [:]
     
@@ -49,27 +45,22 @@ class MultipeerSessionManager: NSObject, ObservableObject {
     // 初期化
     init(profile: UserProfile) {
         self.myProfile = profile
-        
         // 効果的なデバイス名で初期化（特殊文字を避ける）
         // PeerIDは一度作成されると変更できないので、ユニークなIDを使用
         let deviceName = UIDevice.current.name.replacingOccurrences(of: " ", with: "-")
         self.myPeerID = MCPeerID(displayName: deviceName)
-        
+        // 自分のステータス、名前、デバイストークンを含める
         let discoveryInfo: [String: String] = [
                     "status": myProfile.conversationStatus.rawValue,
                     "name": myProfile.name,
                     "deviceToken": myDeviceToken // トークンを追加
                     ]
-        
         super.init()
-        
         // ログ記録
         self.logDebug("初期化: デバイス名=" + deviceName)
-        
         // セッションとサービスを設定
         setupSession()
     }
-    
     private func setupSession() {
         // デバイストークンの永続化
             if UserDefaults.standard.string(forKey: "myDeviceToken") == nil {
@@ -99,50 +90,42 @@ class MultipeerSessionManager: NSObject, ObservableObject {
             serviceType: serviceType
         )
         serviceAdvertiser?.delegate = self
-        
         // ブラウザの設定
         serviceBrowser = MCNearbyServiceBrowser(
             peer: myPeerID,
             serviceType: serviceType
         )
         serviceBrowser?.delegate = self
-        
         self.logDebug("サービス設定完了")
     }
-    
-    
-        
     
     func startServices() {
         // サービス開始
         stopServices() // 念のため既存のサービスを停止
-        
         self.logDebug("アドバタイズ開始")
         serviceAdvertiser?.startAdvertisingPeer() // 自分の存在を周りに知らせる
-        
         self.logDebug("ブラウジング開始")
-        serviceBrowser?.startBrowsingForPeers()
-        
+        serviceBrowser?.startBrowsingForPeers() // 誰かいませんか？
         connectionState = .connecting
-        
         // 定期的に接続状態をチェック
         startReconnectTimer()
     }
     
     func stopServices() {
         self.logDebug("サービス停止")
+        // アドバイズブラウジング停止
         serviceAdvertiser?.stopAdvertisingPeer()
         serviceBrowser?.stopBrowsingForPeers()
         stopReconnectTimer()
     }
-    
+    // タイマー開始
     private func startReconnectTimer() {
         stopReconnectTimer()
         reconnectTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
             self?.checkConnectionAndReconnect()
         }
     }
-    
+    // タイマー停止
     private func stopReconnectTimer() {
         reconnectTimer?.invalidate()
         reconnectTimer = nil
@@ -168,7 +151,6 @@ class MultipeerSessionManager: NSObject, ObservableObject {
         stopServices()
         session?.disconnect()
     }
-    
     // 特定のピアにプロフィールを送信
     func sendProfileTo(peer: MCPeerID) {
         guard let session = session else {
@@ -429,7 +411,7 @@ extension MultipeerSessionManager: MCNearbyServiceAdvertiserDelegate {
 }
 
 // MARK: - MCNearbyServiceBrowserDelegate
-// 周囲のデバイスを探す側の処理
+// 周囲のデバイスを探して発見した場合の処理
 extension MultipeerSessionManager: MCNearbyServiceBrowserDelegate {
     func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String : String]?) {
         // 検出情報からステータスを抽出

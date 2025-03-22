@@ -13,6 +13,7 @@ import RealityKit
 struct UserProfile: Codable,Identifiable {
     var id = UUID()
     var name: String
+    var profileImage: Data?
     var conversationStatus: ConversationStatus
     var interests: [String]
     var bio: String
