@@ -167,6 +167,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "$(TARGET_NAME)/Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "このアプリは近くのユーザーを見つけるためにBluetoothを使用します";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "このアプリは近くのユーザーを見つけるためにローカルネットワークを使用します";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -194,6 +196,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "$(TARGET_NAME)/Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "このアプリは近くのユーザーを見つけるためにBluetoothを使用します";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "このアプリは近くのユーザーを見つけるためにローカルネットワークを使用します";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

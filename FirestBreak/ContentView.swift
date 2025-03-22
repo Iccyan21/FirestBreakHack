@@ -19,6 +19,9 @@ struct ContentView: View {
     @State private var centralManager: CBCentralManager?
     @State private var showingDebugLogs = false
     @State private var autoAcceptInvitations = true
+    @State var showImmersiveSpace = false
+    @Environment(\.openImmersiveSpace) var openImmersiveSpace
+    @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
     
     init() {
         // Create default profile
@@ -46,6 +49,17 @@ struct ContentView: View {
             
             // Controls
             controlsView
+            Toggle("Show ImmersiveSpace", isOn: $showImmersiveSpace)
+                .toggleStyle(.button)
+                .onChange(of: showImmersiveSpace) { _, newValue in
+                    Task {
+                        if newValue {
+                            await openImmersiveSpace(id: "ImmersiveSpace")
+                        } else {
+                            await dismissImmersiveSpace()
+                        }
+                    }
+                }
         }
         .padding()
         .onAppear {
