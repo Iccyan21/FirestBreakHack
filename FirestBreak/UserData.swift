@@ -1,10 +1,3 @@
-//
-//  UserData.swift
-//  FirestBreak
-//
-//  Created by 水原樹 on 2025/03/22.
-//
-
 import Foundation
 import SwiftUI
 import MultipeerConnectivity
@@ -16,6 +9,7 @@ struct UserProfile: Codable,Identifiable, Hashable {
     var profileImage: Data?
     var conversationStatus: ConversationStatus
     var interests: [String]
+    var thumbsup: Bool = false
     var bio: String
     
     enum ConversationStatus: String, Codable, Hashable {

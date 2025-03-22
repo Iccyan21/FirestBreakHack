@@ -8,7 +8,7 @@ struct ContentView: View {
     
     @Environment(\.openWindow) private var openWindow
     
-    @StateObject private var sessionManager: MultipeerSessionManager
+    @EnvironmentObject private var sessionManager: MultipeerSessionManager
     @State private var showingProfile = false
     @State private var showingInvitation = false
     @State private var invitationPeer: MCPeerID? = nil
@@ -18,20 +18,6 @@ struct ContentView: View {
     @State var showImmersiveSpace = false
     @Environment(\.openImmersiveSpace) var openImmersiveSpace
     @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
-    
-    init() {
-        // Create default profile
-        let defaultProfile = UserProfile(
-            name: "HogeHoge",
-            profileImage: nil,
-            conversationStatus: .available,
-            interests: ["Reading", "Driving", "Programing"],
-            bio: "Plase talk to me!!!!!"
-        )
-        
-        // Initialize session manager with default profile
-        _sessionManager = StateObject(wrappedValue: MultipeerSessionManager(profile: defaultProfile))
-    }
     
     var body: some View {
         VStack {
@@ -46,17 +32,6 @@ struct ContentView: View {
             
             // リアルタイム通信ができるため、必要なさそう
 //            controlsView
-            Toggle("Send Reaction", isOn: $showImmersiveSpace)
-                .toggleStyle(.button)
-                .onChange(of: showImmersiveSpace) { _, newValue in
-                    Task {
-                        if newValue {
-                            await openImmersiveSpace(id: "ImmersiveSpace")
-                        } else {
-                            await dismissImmersiveSpace()
-                        }
-                    }
-                }
         }
         .padding()
         .onAppear {
@@ -211,10 +186,34 @@ struct ContentView: View {
             ForEach(Array(sessionManager.discoveredProfiles.keys), id: \.self) { peerID in
                 if let mcPeerID = peerID as? MCPeerID,
                    let profile = sessionManager.discoveredProfiles[mcPeerID] {
-                    Button {
-                        openWindow(id: "ProfileDetail", value: profile)
-                    } label: {
-                        PeerProfileView(profile: profile, commonInterests: sessionManager.findCommonInterests(with: profile))
+                    HStack {
+                        Button {
+                            openWindow(id: "ProfileDetail", value: profile)
+                        } label: {
+                            PeerProfileView(
+                                profile: profile,
+                                commonInterests: sessionManager.findCommonInterests(with: profile)
+                            )
+                        }
+                        
+                        Spacer()
+                        if profile.thumbsup {
+                            Model3D(named: "thumbsup.usdz")
+                                .scaleEffect(0.05)
+                                .frame(width: 10, height: 10)
+                        }
+                        
+                        Toggle("Send Reaction", isOn: $showImmersiveSpace)
+                            .toggleStyle(.button)
+                            .onChange(of: showImmersiveSpace) { _, newValue in
+                                Task {
+                                    if newValue {
+                                        await openImmersiveSpace(id: "ImmersiveSpace")
+                                    } else {
+                                        await dismissImmersiveSpace()
+                                    }
+                                }
+                            }
                     }
                 }
             }

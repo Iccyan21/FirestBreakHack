@@ -4,6 +4,15 @@ import ARKit
 
 @main
 struct FirestBreakApp: App {
+    @StateObject private var sessionManager = MultipeerSessionManager(
+        profile: UserProfile(
+            name: "HogeHoge",
+            profileImage: nil,
+            conversationStatus: .available,
+            interests: ["Reading", "Driving", "Programing"],
+            bio: "Plase talk to me!!!!!"
+        )
+    )
     private let session = ARKitSession()
     private let provider = HandTrackingProvider()
     private let rootEntity = Entity()
@@ -11,6 +20,7 @@ struct FirestBreakApp: App {
     var body: some SwiftUI.Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(sessionManager)
         }
         WindowGroup(id: "ProfileDetail", for: UserProfile.self) { $profile in
             let pro = profile ?? .init(name: "unknown user", conversationStatus: .unavailable, interests: [], bio: "不明なユーザー")
@@ -44,6 +54,15 @@ struct FirestBreakApp: App {
                     
                     if isThumbsUpGesture(handAnchor: handAnchor) {
                         setJointColors(handAnchor: handAnchor, color: .yellow)
+                        DispatchQueue.main.async {
+                            sessionManager.myProfile.thumbsup = true
+                            sessionManager.broadcastProfile()
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                            sessionManager.myProfile.thumbsup = false
+                            sessionManager.broadcastProfile()
+                        }
+                        
                     } else {
                         setJointColors(handAnchor: handAnchor, color: .white)
                     }
