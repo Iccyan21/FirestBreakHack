@@ -2,10 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BluetoothAlwaysUsageDescription</key>
+	<string>Bluetooth接続するために使います</string>
+	<key>LocalNetworkUsageDescription</key>
+	<string>近くにいるユーザーを発見するためにローカルネットワークを使用します</string>
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_vision-fbreak._tcp</string>
-		<string>_vision-fbreak._udp</string>
+		<string>_FirestBreak._tcp</string>
 	</array>
 	<key>NSHandsTrackingUsageDescription</key>
 	<string>Track Your Hands</string>

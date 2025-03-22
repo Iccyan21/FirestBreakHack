@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  FirestBreak
-//
-//  Created by 水原樹 on 2025/03/22.
-//
-
 import SwiftUI
 import RealityKit
 import RealityKitContent
@@ -12,6 +5,9 @@ import MultipeerConnectivity
 import CoreBluetooth
 
 struct ContentView: View {
+    
+    @Environment(\.openWindow) private var openWindow
+    
     @StateObject private var sessionManager: MultipeerSessionManager
     @State private var showingProfile = false
     @State private var showingInvitation = false
@@ -26,10 +22,11 @@ struct ContentView: View {
     init() {
         // Create default profile
         let defaultProfile = UserProfile(
-            name: UIDevice.current.name,
+            name: "HogeHoge",
+            profileImage: nil,
             conversationStatus: .available,
-            interests: ["テクノロジー", "アニメ", "旅行"],
-            bio: "新しい出会いを探しています"
+            interests: ["Reading", "Driving", "Programing"],
+            bio: "Plase talk to me!!!!!"
         )
         
         // Initialize session manager with default profile
@@ -49,7 +46,7 @@ struct ContentView: View {
             
             // Controls
             controlsView
-            Toggle("Show ImmersiveSpace", isOn: $showImmersiveSpace)
+            Toggle("Send Reaction", isOn: $showImmersiveSpace)
                 .toggleStyle(.button)
                 .onChange(of: showImmersiveSpace) { _, newValue in
                     Task {
@@ -161,7 +158,7 @@ struct ContentView: View {
             // 設定オプション
             HStack {
                 Toggle("招待を自動承認", isOn: $autoAcceptInvitations)
-                    .onChange(of: autoAcceptInvitations) { newValue in
+                    .onChange(of: autoAcceptInvitations) { _, newValue in
                         sessionManager.toggleAutoAccept(newValue)
                     }
                 
@@ -210,9 +207,15 @@ struct ContentView: View {
     private var connectedPeersView: some View {
         List {
             // 発見したプロフィールを表示
+
             ForEach(Array(sessionManager.discoveredProfiles.keys), id: \.self) { peerID in
-                if let profile = sessionManager.discoveredProfiles[peerID] {
-                    PeerProfileView(profile: profile, commonInterests: sessionManager.findCommonInterests(with: profile))
+                if let mcPeerID = peerID as? MCPeerID,
+                   let profile = sessionManager.discoveredProfiles[mcPeerID] {
+                    Button {
+                        openWindow(id: "ProfileDetail", value: profile)
+                    } label: {
+                        PeerProfileView(profile: profile, commonInterests: sessionManager.findCommonInterests(with: profile))
+                    }
                 }
             }
             
@@ -337,6 +340,8 @@ struct ProfileEditorView: View {
     @State private var status: UserProfile.ConversationStatus
     @State private var interests: String
     @State private var bio: String
+    @State private var profileImage: UIImage?
+    @State private var showingImagePicker = false
     
     let onSave: (UserProfile) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -346,12 +351,56 @@ struct ProfileEditorView: View {
         _status = State(initialValue: profile.conversationStatus)
         _interests = State(initialValue: profile.interests.joined(separator: ", "))
         _bio = State(initialValue: profile.bio)
+        
+        // 保存されている画像データがあれば読み込む
+        if let imageData = profile.profileImage, let uiImage = UIImage(data: imageData) {
+            _profileImage = State(initialValue: uiImage)
+        }
+        
         self.onSave = onSave
     }
     
     var body: some View {
         NavigationView {
             Form {
+                Section(header: Text("プロフィール画像")) {
+                    HStack {
+                        Spacer()
+                        ZStack {
+                            if let image = profileImage {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 120, height: 120)
+                                    .clipShape(Circle())
+                            } else {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 120, height: 120)
+                                
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.white)
+                            }
+                            
+                            Circle()
+                                .stroke(Color.blue, lineWidth: 2)
+                                .frame(width: 120, height: 120)
+                        }
+                        .onTapGesture {
+                            showingImagePicker = true
+                        }
+                        Spacer()
+                    }
+                    .padding(.vertical)
+                    
+                    Button("画像を選択") {
+                        showingImagePicker = true
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                }
+                
                 Section(header: Text("基本情報")) {
                     TextField("名前", text: $name)
                     
@@ -385,23 +434,36 @@ struct ProfileEditorView: View {
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") {
-                        let interestArray = interests
-                            .split(separator: ",")
-                            .map { $0.trimmingCharacters(in: .whitespaces) }
-                            .filter { !$0.isEmpty }
-                        
-                        let updatedProfile = UserProfile(
-                            name: name,
-                            conversationStatus: status,
-                            interests: interestArray,
-                            bio: bio
-                        )
-                        
-                        onSave(updatedProfile)
+                        saveProfile()
                     }
                 }
             }
+            .sheet(isPresented: $showingImagePicker) {
+                ImagePicker(selectedImage: $profileImage)
+            }
         }
+    }
+    
+    // 保存ボタンのアクションを変更して画像データを含める
+    private func saveProfile() {
+        let interestArray = interests
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        
+        var updatedProfile = UserProfile(
+            name: name,
+            conversationStatus: status,
+            interests: interestArray,
+            bio: bio
+        )
+        
+        // 画像データを圧縮して保存
+        if let image = profileImage, let imageData = image.jpegData(compressionQuality: 0.7) {
+            updatedProfile.profileImage = imageData
+        }
+        
+        onSave(updatedProfile)
     }
 }
 
@@ -413,20 +475,43 @@ struct PeerProfileView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Circle()
-                    .fill(profile.conversationStatus.color)
-                    .frame(width: 12, height: 12)
+                // プロフィール画像を表示
+                if let imageData = profile.profileImage, let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 50, height: 50)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(profile.conversationStatus.color, lineWidth: 2)
+                        )
+                } else {
+                    Circle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 50, height: 50)
+                        .overlay(
+                            Circle()
+                                .stroke(profile.conversationStatus.color, lineWidth: 2)
+                        )
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .foregroundColor(.white)
+                        )
+                }
                 
-                Text(profile.name)
-                    .font(.headline)
+                VStack(alignment: .leading) {
+                    Text(profile.name)
+                        .font(.headline)
+                    
+                    Text(profile.conversationStatus.rawValue)
+                        .font(.caption)
+                        .padding(4)
+                        .background(profile.conversationStatus.color.opacity(0.2))
+                        .cornerRadius(4)
+                }
                 
                 Spacer()
-                
-                Text(profile.conversationStatus.rawValue)
-                    .font(.caption)
-                    .padding(4)
-                    .background(profile.conversationStatus.color.opacity(0.2))
-                    .cornerRadius(4)
             }
             
             if !profile.bio.isEmpty {
@@ -450,9 +535,39 @@ struct PeerProfileView: View {
         .padding(.vertical, 8)
     }
 }
-// MARK: - Preview Provider
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
+
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var selectedImage: UIImage?
+    @Environment(\.presentationMode) private var presentationMode
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.allowsEditing = true
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+        
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let editedImage = info[.editedImage] as? UIImage {
+                parent.selectedImage = editedImage
+            } else if let originalImage = info[.originalImage] as? UIImage {
+                parent.selectedImage = originalImage
+            }
+            
+            parent.presentationMode.wrappedValue.dismiss()
+        }
     }
 }
