@@ -17,6 +17,8 @@ struct ContentView: View {
     @State private var showingInvitation = false
     @State private var invitationPeer: MCPeerID? = nil
     @State private var centralManager: CBCentralManager?
+    @State private var showingDebugLogs = false
+    
     init() {
         // Create default profile
         let defaultProfile = UserProfile(
@@ -35,6 +37,9 @@ struct ContentView: View {
             // Status indicator
             statusView
             
+            // Connection status and debug
+            connectionStatusView
+            
             // Connected peers list
             connectedPeersView
             
@@ -49,6 +54,11 @@ struct ContentView: View {
             sessionManager.receivedInvitation = { peer, _ in
                 self.invitationPeer = peer
                 self.showingInvitation = true
+            }
+            
+            // 重要: サービスを明示的に開始
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                sessionManager.startServices()
             }
         }
         .sheet(isPresented: $showingProfile) {
@@ -73,6 +83,9 @@ struct ContentView: View {
                 Text("\(peer.displayName)さんが会話を始めたいと思っています。")
             }
         }
+        .sheet(isPresented: $showingDebugLogs) {
+            DebugLogsView(logs: sessionManager.debugLogs)
+        }
     }
     
     // MARK: - Subviews
@@ -93,6 +106,39 @@ struct ContentView: View {
             }) {
                 Image(systemName: "person.circle")
                     .font(.title)
+            }
+        }
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(10)
+    }
+    
+    private var connectionStatusView: some View {
+        HStack {
+            Button(action: {
+                // 接続をリセット
+                sessionManager.resetConnection()
+            }) {
+                Image(systemName: "arrow.clockwise.circle")
+                    .font(.title2)
+            }
+            .padding(.trailing, 8)
+            
+            if sessionManager.connectedPeers.isEmpty {
+                Text("接続中のピアがいません")
+                    .foregroundColor(.red)
+            } else {
+                Text("接続中: \(sessionManager.connectedPeers.count)ピア")
+                    .foregroundColor(.green)
+            }
+            
+            Spacer()
+            
+            Button(action: {
+                showingDebugLogs.toggle()
+            }) {
+                Image(systemName: "terminal")
+                    .font(.title2)
             }
         }
         .padding()
@@ -147,6 +193,23 @@ struct ContentView: View {
                     .foregroundColor(.white)
                     .cornerRadius(8)
             }
+        }
+    }
+}
+
+// MARK: - Debug Logs View
+struct DebugLogsView: View {
+    let logs: [String]
+    
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(logs, id: \.self) { log in
+                    Text(log)
+                        .font(.system(.footnote, design: .monospaced))
+                }
+            }
+            .navigationTitle("デバッグログ")
         }
     }
 }
@@ -263,7 +326,6 @@ struct PeerProfileView: View {
         .padding(.vertical, 8)
     }
 }
-
 // MARK: - Preview Provider
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
