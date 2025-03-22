@@ -1,54 +1,68 @@
-//
-//  UserProfileDetailView.swift
-//  FirestBreak
-//
-//  Created by Ohara Yoji on 2025/03/22.
-//
-
 import SwiftUI
 
 struct UserProfileDetailView: View {
-    
-    private let profile: UserProfile
-    
-    init(profile: UserProfile) {
-        self.profile = profile
-    }
+    let profile: UserProfile
     
     var body: some View {
-        NavigationStack {
-            Group {
-                if let imageData = profile.profileImage, let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
-                } else {
-                    Image(systemName: "person.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity)
-                }
+        // カード風の枠を持つコンテナ
+        VStack(spacing: 16) {
+            // プロフィール画像
+            if let imageData = profile.profileImage,
+               let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 150, height: 150)
+                    .clipShape(Circle())            // 円形にクリップ
+                    .shadow(radius: 5)              // 影を付けて少し立体感
+            } else {
+                // プロフィール画像がない場合の代替
+                Image(systemName: "person.crop.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 150, height: 150)
+                    .foregroundColor(.gray)
             }
-            .padding(16)
-            .overlay(alignment: .bottom) {
-                Rectangle()
-                    .foregroundStyle(
-                        LinearGradient(colors: [.black.opacity(0.5), .clear, .clear], startPoint: .bottom, endPoint: .top)
-                    )
-                    .overlay(alignment: .bottomLeading) {
-                        VStack(alignment: .leading) {
-                            Text(profile.name)
-                                .bold()
-                            Text(profile.bio)
-                            Text(profile.interests.joined(separator: ", "))
-                        }
-                        .font(.system(size: 40))
-                        .padding(40)
-                    }
+            
+            // ユーザー名
+            Text(profile.name)
+                .font(.title)
+                .fontWeight(.bold)
+            
+            // 会話ステータス（色付き丸 + テキスト）
+            HStack {
+                Circle()
+                    .fill(profile.conversationStatus.color)
+                    .frame(width: 14, height: 14)
+                Text(profile.conversationStatus.rawValue)
+                    .font(.headline)
             }
+            
+            // 趣味
+            if !profile.interests.isEmpty {
+                Text("趣味: \(profile.interests.joined(separator: ", "))")
+                    .font(.subheadline)
+            }
+            
+            // 一言メッセージ
+            if !profile.bio.isEmpty {
+                Text("一言: \(profile.bio)")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
         }
-        .frame(width: 700, height: 700)
+        .padding()
+//        // 全体をカード風に演出
+//        .frame(width: 350, height: 500)
+        .background {
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(radius: 5)
+        }
+        // Navigation のタイトル非表示
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
     }
-}
-
-#Preview {
-    UserProfileDetailView(profile: .init(name: "hogehoge", conversationStatus: .available, interests: ["aaa", "bbb", "ccc"], bio: "私の名前は　あああああ"))
 }
