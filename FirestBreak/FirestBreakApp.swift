@@ -81,7 +81,7 @@ struct FirestBreakApp: App {
                 }
             }
         }
-        .immersionStyle(selection: .constant(.full), in: .full)
+//        .immersionStyle(selection: .constant(.full), in: .full)
 //        .upperLimbVisibility(.hidden)
     }
 }
