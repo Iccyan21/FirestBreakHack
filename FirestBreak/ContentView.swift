@@ -24,9 +24,10 @@ struct ContentView: View {
         // Create default profile
         let defaultProfile = UserProfile(
             name: UIDevice.current.name,
+            profileImage: nil,
             conversationStatus: .available,
-            interests: ["テクノロジー", "アニメ", "旅行"],
-            bio: "新しい出会いを探しています"
+            interests: ["野球", "アニメ", "プログラミング"],
+            bio: "野球の話が好きです"
         )
         
         // Initialize session manager with default profile
