@@ -10,6 +10,8 @@
 	<array>
 		<string>_FirestBreak._tcp</string>
 	</array>
+	<key>NSHandsTrackingUsageDescription</key>
+	<string>Track Your Hands</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationPreferredDefaultSceneSessionRole</key>
@@ -19,5 +21,11 @@
 		<key>UISceneConfigurations</key>
 		<dict/>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+		<string>bluetooth-peripheral</string>
+		<string>nearby-interaction</string>
+	</array>
 </dict>
 </plist>

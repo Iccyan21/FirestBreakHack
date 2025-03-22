@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  FirestBreak
-//
-//  Created by 水原樹 on 2025/03/22.
-//
-
 import SwiftUI
 import RealityKit
 import RealityKitContent
@@ -22,6 +15,9 @@ struct ContentView: View {
     @State private var centralManager: CBCentralManager?
     @State private var showingDebugLogs = false
     @State private var autoAcceptInvitations = true
+    @State var showImmersiveSpace = false
+    @Environment(\.openImmersiveSpace) var openImmersiveSpace
+    @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
     
     init() {
         // Create default profile
@@ -50,6 +46,17 @@ struct ContentView: View {
             
             // Controls
             controlsView
+            Toggle("Send Reaction", isOn: $showImmersiveSpace)
+                .toggleStyle(.button)
+                .onChange(of: showImmersiveSpace) { _, newValue in
+                    Task {
+                        if newValue {
+                            await openImmersiveSpace(id: "ImmersiveSpace")
+                        } else {
+                            await dismissImmersiveSpace()
+                        }
+                    }
+                }
         }
         .padding()
         .onAppear {
@@ -151,7 +158,7 @@ struct ContentView: View {
             // 設定オプション
             HStack {
                 Toggle("招待を自動承認", isOn: $autoAcceptInvitations)
-                    .onChange(of: autoAcceptInvitations) { newValue in
+                    .onChange(of: autoAcceptInvitations) { _, newValue in
                         sessionManager.toggleAutoAccept(newValue)
                     }
                 
@@ -563,8 +570,4 @@ struct ImagePicker: UIViewControllerRepresentable {
             parent.presentationMode.wrappedValue.dismiss()
         }
     }
-}
-// MARK: - Preview Provider
-#Preview {
-    ContentView()
 }
