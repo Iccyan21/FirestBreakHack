@@ -21,6 +21,7 @@ class MultipeerSessionManager: NSObject, ObservableObject {
     // 接続状態管理
     @Published var connectionState: ConnectionState = .notConnected
     
+    
     // 保留中の招待
     private var pendingInvitationHandlers: [MCPeerID: (Bool, MCSession?) -> Void] = [:]
     
@@ -43,6 +44,7 @@ class MultipeerSessionManager: NSObject, ObservableObject {
     
     // 招待を受け入れるかどうかのフラグ
     private var autoAcceptInvitations = true
+    private var myDeviceToken: String = UUID().uuidString
     
     // 初期化
     init(profile: UserProfile) {
@@ -52,6 +54,12 @@ class MultipeerSessionManager: NSObject, ObservableObject {
         // PeerIDは一度作成されると変更できないので、ユニークなIDを使用
         let deviceName = UIDevice.current.name.replacingOccurrences(of: " ", with: "-")
         self.myPeerID = MCPeerID(displayName: deviceName)
+        
+        let discoveryInfo: [String: String] = [
+                    "status": myProfile.conversationStatus.rawValue,
+                    "name": myProfile.name,
+                    "deviceToken": myDeviceToken // トークンを追加
+                    ]
         
         super.init()
         
@@ -63,6 +71,12 @@ class MultipeerSessionManager: NSObject, ObservableObject {
     }
     
     private func setupSession() {
+        // デバイストークンの永続化
+            if UserDefaults.standard.string(forKey: "myDeviceToken") == nil {
+                UserDefaults.standard.set(myDeviceToken, forKey: "myDeviceToken")
+            } else {
+                myDeviceToken = UserDefaults.standard.string(forKey: "myDeviceToken")!
+            }
         // 暗号化セッションの設定
         session = MCSession(
             peer: myPeerID,
@@ -74,7 +88,8 @@ class MultipeerSessionManager: NSObject, ObservableObject {
         // discoveryInfoをStringで一貫させる（バイナリデータは含めない）
         let discoveryInfo: [String: String] = [
             "status": myProfile.conversationStatus.rawValue,
-            "name": myProfile.name
+            "name": myProfile.name,
+            "deviceToken": myDeviceToken
         ]
         
         // 広告主の設定
@@ -94,6 +109,9 @@ class MultipeerSessionManager: NSObject, ObservableObject {
         
         self.logDebug("サービス設定完了")
     }
+    
+    
+        
     
     func startServices() {
         // サービス開始
@@ -203,7 +221,8 @@ class MultipeerSessionManager: NSObject, ObservableObject {
         // 新しいdiscoveryInfo
         let discoveryInfo: [String: String] = [
             "status": newProfile.conversationStatus.rawValue,
-            "name": newProfile.name
+            "name": newProfile.name,
+            "deviceToken": myDeviceToken
         ]
         
         serviceAdvertiser = MCNearbyServiceAdvertiser(
@@ -419,10 +438,10 @@ extension MultipeerSessionManager: MCNearbyServiceBrowserDelegate {
         self.logDebug("ピア発見: \(name) (ID: \(peerID.displayName)) ステータス: \(status)")
         
         // 自分自身は無視（自分自身を招待しないように）
-        if peerID.displayName == myPeerID.displayName {
-            self.logDebug("自分自身のピアを無視します")
-            return
-        }
+        if let token = info?["deviceToken"], token == myDeviceToken {
+                self.logDebug("自分自身のピアを無視します (トークン一致)")
+                return
+            }
         
         // 相手が会話OKの場合は自動的に招待
         if status == UserProfile.ConversationStatus.available.rawValue {
@@ -440,3 +459,4 @@ extension MultipeerSessionManager: MCNearbyServiceBrowserDelegate {
         connectionState = .error
     }
 }
+
