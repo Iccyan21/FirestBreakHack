@@ -44,8 +44,8 @@ struct ContentView: View {
             // Connected peers list
             connectedPeersView
             
-            // Controls
-            controlsView
+            // リアルタイム通信ができるため、必要なさそう
+//            controlsView
             Toggle("Send Reaction", isOn: $showImmersiveSpace)
                 .toggleStyle(.button)
                 .onChange(of: showImmersiveSpace) { _, newValue in
@@ -237,6 +237,7 @@ struct ContentView: View {
         .listStyle(InsetGroupedListStyle())
     }
     
+    //リアルタイム通信ができるため、必要なさそう
     private var controlsView: some View {
         HStack {
             Button(action: {
@@ -342,6 +343,7 @@ struct ProfileEditorView: View {
     @State private var bio: String
     @State private var profileImage: UIImage?
     @State private var showingImagePicker = false
+    @State private var showingPersonaCamera = false
     
     let onSave: (UserProfile) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -364,43 +366,45 @@ struct ProfileEditorView: View {
         NavigationView {
             Form {
                 Section(header: Text("プロフィール画像")) {
-                    HStack {
-                        Spacer()
+                    HStack(alignment: .center, spacing: 16) {
+                        // アイコン画像部分
                         ZStack {
                             if let image = profileImage {
                                 Image(uiImage: image)
                                     .resizable()
                                     .scaledToFill()
-                                    .frame(width: 120, height: 120)
+                                    .frame(width: 80, height: 80)
                                     .clipShape(Circle())
                             } else {
                                 Circle()
                                     .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 120, height: 120)
-                                
+                                    .frame(width: 80, height: 80)
                                 Image(systemName: "person.fill")
-                                    .font(.system(size: 60))
+                                    .font(.system(size: 40))
                                     .foregroundColor(.white)
                             }
-                            
                             Circle()
                                 .stroke(Color.blue, lineWidth: 2)
-                                .frame(width: 120, height: 120)
+                                .frame(width: 80, height: 80)
                         }
-                        .onTapGesture {
-                            showingImagePicker = true
+                        
+                        // 右側に縦並びのボタン配置
+                        VStack(alignment: .leading, spacing: 8) {
+                            Button("画像を選択") {
+                                showingImagePicker = true
+                            }
+                            .buttonStyle(BorderlessButtonStyle())
+                            
+                            Button("ペルソナを撮影") {
+                                showingPersonaCamera = true
+                            }
+                            .buttonStyle(BorderlessButtonStyle())
                         }
                         Spacer()
                     }
-                    .padding(.vertical)
-                    
-                    Button("画像を選択") {
-                        showingImagePicker = true
-                    }
-                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
                 }
-                
+
                 Section(header: Text("基本情報")) {
                     TextField("名前", text: $name)
                     
@@ -440,6 +444,11 @@ struct ProfileEditorView: View {
             }
             .sheet(isPresented: $showingImagePicker) {
                 ImagePicker(selectedImage: $profileImage)
+            }
+            .sheet(isPresented: $showingPersonaCamera) {
+                PersonaCameraViewWrapper { capturedImage in
+                    profileImage = capturedImage
+                }
             }
         }
     }

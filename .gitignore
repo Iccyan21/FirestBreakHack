@@ -1,4 +1,5 @@
 # Xcode のユーザー固有の設定・一時ファイルを無視
 *.xcuserdatad
 xcuserdata/
+*.xcuserstate
 
