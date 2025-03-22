@@ -23,11 +23,11 @@ struct ContentView: View {
     init() {
         // Create default profile
         let defaultProfile = UserProfile(
-            name: UIDevice.current.name,
+            name: "HogeHoge",
             profileImage: nil,
             conversationStatus: .available,
-            interests: ["野球", "アニメ", "プログラミング"],
-            bio: "野球の話が好きです"
+            interests: ["Reading", "Driving", "Programing"],
+            bio: "Plase talk to me!!!!!"
         )
         
         // Initialize session manager with default profile
@@ -197,9 +197,15 @@ struct ContentView: View {
     private var connectedPeersView: some View {
         List {
             // 発見したプロフィールを表示
+
             ForEach(Array(sessionManager.discoveredProfiles.keys), id: \.self) { peerID in
-                if let profile = sessionManager.discoveredProfiles[peerID] {
-                    PeerProfileView(profile: profile, commonInterests: sessionManager.findCommonInterests(with: profile))
+                if let mcPeerID = peerID as? MCPeerID,
+                   let profile = sessionManager.discoveredProfiles[mcPeerID] {
+                    NavigationLink {
+                        PeerDetailView(profile: profile, peerID: mcPeerID, sessionManager: sessionManager)
+                    } label: {
+                        PeerProfileView(profile: profile, commonInterests: sessionManager.findCommonInterests(with: profile))
+                    }
                 }
             }
             
