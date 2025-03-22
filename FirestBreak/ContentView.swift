@@ -9,13 +9,14 @@ import SwiftUI
 import RealityKit
 import RealityKitContent
 import MultipeerConnectivity
+import CoreBluetooth
 
 struct ContentView: View {
     @StateObject private var sessionManager: MultipeerSessionManager
     @State private var showingProfile = false
     @State private var showingInvitation = false
     @State private var invitationPeer: MCPeerID? = nil
-    
+    @State private var centralManager: CBCentralManager?
     init() {
         // Create default profile
         let defaultProfile = UserProfile(
@@ -42,6 +43,8 @@ struct ContentView: View {
         }
         .padding()
         .onAppear {
+            // Bluetoothへのアクセス許可を明示的に要求
+            self.centralManager = CBCentralManager(delegate: nil, queue: nil)
             // Set up invitation handler
             sessionManager.receivedInvitation = { peer, _ in
                 self.invitationPeer = peer
