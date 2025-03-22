@@ -18,13 +18,13 @@ struct UserProfile: Codable,Identifiable {
     var bio: String
     
     enum ConversationStatus: String,Codable {
-        case availabel = "会話OK"
+        case available = "会話OK"
         case busy = "少し忙しい"
         case unavailable = "会話NG"
         
         var color: Color {
             switch self {
-            case .availabel:
+            case .available:
                 return .green
             case .busy:
                 return .yellow

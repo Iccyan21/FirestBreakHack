@@ -21,7 +21,7 @@ struct ContentView: View {
         // Create default profile
         let defaultProfile = UserProfile(
             name: UIDevice.current.name,
-            conversationStatus: .availabel,
+            conversationStatus: .available,
             interests: ["テクノロジー", "アニメ", "旅行"],
             bio: "新しい出会いを探しています"
         )
@@ -119,12 +119,12 @@ struct ContentView: View {
                 var newProfile = sessionManager.myProfile
                 
                 switch currentStatus {
-                case .availabel:
+                case .available:
                     newProfile.conversationStatus = .busy
                 case .busy:
                     newProfile.conversationStatus = .unavailable
                 case .unavailable:
-                    newProfile.conversationStatus = .availabel
+                    newProfile.conversationStatus = .available
                 }
                 
                 sessionManager.updateProfile(newProfile)
@@ -175,7 +175,7 @@ struct ProfileEditorView: View {
                     TextField("名前", text: $name)
                     
                     Picker("会話ステータス", selection: $status) {
-                        Text("会話OK").tag(UserProfile.ConversationStatus.availabel)
+                        Text("会話OK").tag(UserProfile.ConversationStatus.available)
                         Text("少し忙しい").tag(UserProfile.ConversationStatus.busy)
                         Text("話しかけNG").tag(UserProfile.ConversationStatus.unavailable)
                     }
