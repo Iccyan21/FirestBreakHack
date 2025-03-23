@@ -19,6 +19,8 @@ struct ContentView: View {
     @Environment(\.openImmersiveSpace) var openImmersiveSpace
     @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
     
+    private let soundManager = SoundManager()
+    
     var body: some View {
         VStack {
             // Status indicator
@@ -201,6 +203,9 @@ struct ContentView: View {
                             Model3D(named: "thumbsup.usdz")
                                 .scaleEffect(0.05)
                                 .frame(width: 10, height: 10)
+                                .onAppear {
+                                    soundManager.startMusic(name: "reaction-se")
+                                }
                         }
                         
                         Toggle("Send Reaction", isOn: $showImmersiveSpace)
