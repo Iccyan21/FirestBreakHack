@@ -73,6 +73,14 @@ struct FirestBreakApp: App {
                             // 両手とも赤に更新
                             setJointColors(handAnchor: leftHandAnchor, color: .red)
                             setJointColors(handAnchor: rightHandAnchor, color: .red)
+                            DispatchQueue.main.async {
+                                sessionManager.myProfile.heart = true
+                                sessionManager.broadcastProfile()
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                                sessionManager.myProfile.heart = false
+                                sessionManager.broadcastProfile()
+                            }
                         } else {
                             heartGestureActive = false
                         }
@@ -86,7 +94,7 @@ struct FirestBreakApp: App {
                                 sessionManager.myProfile.thumbsup = true
                                 sessionManager.broadcastProfile()
                             }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                                 sessionManager.myProfile.thumbsup = false
                                 sessionManager.broadcastProfile()
                             }
