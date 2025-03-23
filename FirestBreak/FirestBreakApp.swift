@@ -34,6 +34,7 @@ struct FirestBreakApp: App {
             let pro = profile ?? .init(name: "unknown user", conversationStatus: .unavailable, interests: [], bio: "不明なユーザー")
             UserProfileDetailView(profile: pro)
         }
+        .defaultSize(width: 500, height: 500)
         ImmersiveSpace(id: "ImmersiveSpace") {
             RealityView { content in
                 content.add(rootEntity)
