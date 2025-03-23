@@ -202,6 +202,11 @@ struct ContentView: View {
                                 .scaleEffect(0.05)
                                 .frame(width: 10, height: 10)
                         }
+//                        if profile.heart {
+//                            Model3D(named: "heart2.usdz")
+//                                .scaleEffect(0.1)
+//                                .frame(width: 10, height: 10)
+//                        }
                         
                         Toggle("Send Reaction", isOn: $showImmersiveSpace)
                             .toggleStyle(.button)

@@ -10,6 +10,7 @@ struct UserProfile: Codable,Identifiable, Hashable {
     var conversationStatus: ConversationStatus
     var interests: [String]
     var thumbsup: Bool = false
+    var heart: Bool = false
     var bio: String
     
     enum ConversationStatus: String, Codable, Hashable {
