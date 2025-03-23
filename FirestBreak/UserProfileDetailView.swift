@@ -55,7 +55,6 @@ struct UserProfileDetailView: View {
         }
         .padding()
 //        // 全体をカード風に演出
-//        .frame(width: 350, height: 500)
         .background {
             RoundedRectangle(cornerRadius: 20)
                 .fill(Color(.systemBackground))
