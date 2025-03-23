@@ -16,19 +16,24 @@ struct FirestBreakApp: App {
     private let session = ARKitSession()
     private let provider = HandTrackingProvider()
     private let rootEntity = Entity()
+    
+    @State private var latestHandTracking: HandsUpdates = .init(left: nil, right: nil)
+    @State private var heartGestureActive = false
+    
+    struct HandsUpdates {
+        var left: HandAnchor?
+        var right: HandAnchor?
+    }
 
     var body: some SwiftUI.Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(sessionManager)
         }
-        
         WindowGroup(id: "ProfileDetail", for: UserProfile.self) { $profile in
             let pro = profile ?? .init(name: "unknown user", conversationStatus: .unavailable, interests: [], bio: "不明なユーザー")
             UserProfileDetailView(profile: pro)
         }
-        .defaultSize(width: 500, height: 500)
-        
         ImmersiveSpace(id: "ImmersiveSpace") {
             RealityView { content in
                 content.add(rootEntity)
@@ -52,22 +57,41 @@ struct FirestBreakApp: App {
                 for await update in provider.anchorUpdates {
                     let handAnchor = update.anchor
                     
-                    // 関節の位置を更新する共通処理
+                    // それぞれの手の位置更新
                     updateJointPositions(handAnchor: handAnchor)
                     
-                    if isThumbsUpGesture(handAnchor: handAnchor) {
-                        setJointColors(handAnchor: handAnchor, color: .yellow)
-                        DispatchQueue.main.async {
-                            sessionManager.myProfile.thumbsup = true
-                            sessionManager.broadcastProfile()
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                            sessionManager.myProfile.thumbsup = false
-                            sessionManager.broadcastProfile()
-                        }
+                    if let leftHandAnchor = provider.latestAnchors.0,
+                       let rightHandAnchor = provider.latestAnchors.1 {
+                        updateJointPositions(handAnchor: leftHandAnchor)
+                        updateJointPositions(handAnchor: rightHandAnchor)
                         
-                    } else {
-                        setJointColors(handAnchor: handAnchor, color: .white)
+                        if isHeartGesture(leftHandAnchor: leftHandAnchor, rightHandAnchor: rightHandAnchor) {
+                            print("Heart shape detected!")
+                            // heart gesture が検出されたのでフラグを立てる
+                            heartGestureActive = true
+                            // 両手とも赤に更新
+                            setJointColors(handAnchor: leftHandAnchor, color: .red)
+                            setJointColors(handAnchor: rightHandAnchor, color: .red)
+                        } else {
+                            heartGestureActive = false
+                        }
+                    }
+                    
+                    // thumbs up の判定は heart gesture がアクティブでない場合のみ実施
+                    if !heartGestureActive {
+                        if isThumbsUpGesture(handAnchor: handAnchor) {
+                            setJointColors(handAnchor: handAnchor, color: .yellow)
+                            DispatchQueue.main.async {
+                                sessionManager.myProfile.thumbsup = true
+                                sessionManager.broadcastProfile()
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                sessionManager.myProfile.thumbsup = false
+                                sessionManager.broadcastProfile()
+                            }
+                        } else {
+                            setJointColors(handAnchor: handAnchor, color: .white)
+                        }
                     }
                 }
             }
@@ -129,6 +153,34 @@ struct FirestBreakApp: App {
         let isThumbUp = (thumbDist > 0.06)
         
         return isThumbUp && isIndexBent && isMiddleBent && isRingBent && isLittleBent
+    }
+    
+    func isHeartGesture(leftHandAnchor: HandAnchor, rightHandAnchor: HandAnchor) -> Bool {
+        // 最新のハンドアンカーを利用していることを確認
+        guard leftHandAnchor.isTracked, rightHandAnchor.isTracked,
+              // ハンドの各関節をアンラップ
+              let leftThumbTip = leftHandAnchor.handSkeleton?.joint(.thumbTip),
+              let leftIndexTip = leftHandAnchor.handSkeleton?.joint(.indexFingerTip),
+              let rightThumbTip = rightHandAnchor.handSkeleton?.joint(.thumbTip),
+              let rightIndexTip = rightHandAnchor.handSkeleton?.joint(.indexFingerTip),
+              // 各関節がトラッキングされているかも確認
+              leftThumbTip.isTracked, leftIndexTip.isTracked,
+              rightThumbTip.isTracked, rightIndexTip.isTracked else {
+            return false
+        }
+        
+        // 各関節のワールド座標を算出
+        let leftThumbPos = (leftHandAnchor.originFromAnchorTransform * leftThumbTip.anchorFromJointTransform).position
+        let leftIndexPos = (leftHandAnchor.originFromAnchorTransform * leftIndexTip.anchorFromJointTransform).position
+        let rightThumbPos = (rightHandAnchor.originFromAnchorTransform * rightThumbTip.anchorFromJointTransform).position
+        let rightIndexPos = (rightHandAnchor.originFromAnchorTransform * rightIndexTip.anchorFromJointTransform).position
+        
+        // 距離を計算
+        let thumbsDistance = distance(leftThumbPos, rightThumbPos)
+        let indexFingersDistance = distance(leftIndexPos, rightIndexPos)
+        
+        // 両方の距離が 0.04 (4cm) 未満なら心形ジェスチャーと判定
+        return thumbsDistance < 0.1 && indexFingersDistance < 0.1
     }
 }
 
